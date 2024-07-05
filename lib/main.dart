@@ -1,5 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+
+extension CompactMap<T> on Iterable<T?> {
+  Iterable<T> compactMap<E>([
+    E? Function(T?)? transform,
+  ]) =>
+      map(transform ?? (e) => e).where((e) => e != null).cast();
+}
+
+const url = 'https://rb.gy/oro9tn';
 
 void main() {
   runApp(const MyApp());
@@ -26,26 +36,26 @@ class MyHomePage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = useTextEditingController();
-    final text = useState('Use State Data');
-    useEffect(() {
-      controller.addListener(() {
-        text.value = controller.text;
-      });
-      return null;
-    }, [controller]);
+    // final image = useFuture();
+
+    final future = useMemoized(() => NetworkAssetBundle(Uri.parse(url))
+        .load(url)
+        .then(
+          (value) => value.buffer.asUint8List(),
+        )
+        .then(
+          (value) => Image.memory(value),
+        ));
+
+    final snapshot = useFuture(future);
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text('Hooks'),
+        title: const Text('Hooks'),
       ),
       body: Column(
-        children: [
-          TextField(
-            controller: controller,
-          ),
-          Text('You typed:${text.value}')
-        ],
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [snapshot.data].compactMap().toList(),
       ),
     );
   }
